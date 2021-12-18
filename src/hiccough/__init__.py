@@ -26,7 +26,6 @@ def html(val: Union[str, List]):
         else:
             attr["class"] = " ".join(tag_sub[1:])
     tag, id, *_ = pad_list_none(tag.split("#"), 3)
-    print(tag)
     if id:
         attr["id"] = id
     body = "" if not len(val) >= 2 or not val[1] else html(val[1])
