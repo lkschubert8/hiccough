@@ -1,8 +1,9 @@
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 from hiccough import html
 
 import hiccough
+import sys
 
 
 def test_simple_div():
@@ -46,11 +47,15 @@ def test_multi_id():
 
 def test_main():
     hiccough.html = MagicMock(return_value="")
-    assert hiccough.main(["hiccough", '["div"]']) == 0
-    hiccough.html.assert_called_with(["div"])
+    testargs = ["hiccough", '["div"]']
+    with patch.object(sys, "argv", testargs):
+        assert hiccough.main() == 0
+        hiccough.html.assert_called_with(["div"])
 
 
 def test_main_missing_arg():
     hiccough.html = MagicMock(return_value="")
-    assert hiccough.main(["hiccough"]) == 1
-    hiccough.html.assert_not_called()
+    testargs = ["hiccough"]
+    with patch.object(sys, "argv", testargs):
+        assert hiccough.main() == 1
+        hiccough.html.assert_not_called()

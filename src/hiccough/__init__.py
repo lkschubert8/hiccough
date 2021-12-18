@@ -44,16 +44,16 @@ def pad_list_none(list: List, pad_size: int):
     return list + [None] * (pad_size - len(list))
 
 
-def main(args) -> int:
+def main() -> int:
     """Echo the input arguments to standard output"""
-    if len(args) == 1:
+    if len(sys.argv) == 1:
         print("Missing second arg for generating html", file=sys.stderr)
         return 1
 
-    arg = eval(args[1])
+    arg = eval(sys.argv[1])
     print(html(arg))
     return 0
 
 
 if __name__ == "__main__":
-    sys.exit(main(sys.arg))  # next section explains the use of sys.exit
+    sys.exit(main())  # next section explains the use of sys.exit
