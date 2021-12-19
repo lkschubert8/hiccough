@@ -159,6 +159,14 @@ def pad_list_none(list: List, pad_size: int):
     return list + [None] * (pad_size - len(list))
 
 
+def html_splat(*args):
+    """
+    A convenience function for Greg to avoid typing an extra [ and ]. Takes
+    an arg list and splats it into html()
+    """
+    return html(args)
+
+
 def main() -> int:
     """Echo the input arguments to standard output"""
     if len(sys.argv) == 1:

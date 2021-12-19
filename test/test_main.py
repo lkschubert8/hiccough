@@ -1,6 +1,6 @@
 from unittest.mock import MagicMock, patch
 
-from hiccough import html
+from hiccough import html, html_splat
 import pytest
 import hiccough
 import sys
@@ -107,4 +107,11 @@ def test_new_bug():
     assert (
         html(["div>div>div#target.button", "hello"])
         == '<div><div><div class="button" id="target">hello</div></div></div>'
+    )
+
+
+def test_html_splat():
+    assert (
+        html_splat("div.thing", "hello", {"id": "id"})
+        == '<div id="id" class="thing">hello</div>'
     )
