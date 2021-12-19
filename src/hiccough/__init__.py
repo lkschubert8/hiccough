@@ -3,7 +3,6 @@ from enum import Enum
 import sys
 import logging
 
-import pytest
 
 logger = logging.getLogger("hiccough")
 logger.addHandler(logging.NullHandler())
