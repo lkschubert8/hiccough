@@ -101,3 +101,10 @@ def test_simple_attribute():
 
 def test_simple_nest():
     assert html(["body>p", "hello"]) == "<body><p>hello</p></body>"
+
+
+def test_new_bug():
+    assert (
+        html(["div>div>div#target.button", "hello"])
+        == '<div><div><div class="button" id="target">hello</div></div></div>'
+    )

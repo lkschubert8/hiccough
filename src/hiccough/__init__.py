@@ -50,6 +50,8 @@ def html(val):
         attr["class"] = tag_attr["class"]
         del tag_attr["class"]
     attr.update(tag_attr)
+    logger.info(f"Attr {attr}")
+    logger.info(f"TagAttr {tag_attr}")
     for key, val in attr.items():
         attributes += f' {key}="{val}"'
     logger.info(f"Tag : {tag}")
@@ -104,7 +106,7 @@ def parse_tag(tag_str: str) -> Tuple[Tag, Id, Classes]:
                 classes.append(buffer)
 
             if current_state == TagParserState.ID and not id:
-                id == buffer
+                id = buffer
             buffer = ""
             current_state = TagParserState.CLASS
         elif char == "#":
