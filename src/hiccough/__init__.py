@@ -1,39 +1,154 @@
-from typing import List, Union
+from typing import Any, Dict, List, Tuple, Union
+from enum import Enum
 import sys
+import logging
+
+import pytest
+
+logger = logging.getLogger("hiccough")
+logger.addHandler(logging.NullHandler())
+
+Tag = str
+Id = str
+Classes = List[str]
+Attributes = Dict
 
 
-def html(val: Union[str, List]):
+class ParseError(Exception):
+    pass
+
+
+def html(val):
     """
     Accepts a list based tree of html nodes of the format
     [tag : str, body: Union[str, list], dict]
     where the tag is the html tag, the body is either text content
     or more nested html and dict is the tag attributes
     """
+    logger.info(f"Invoked with {val}")
+    # Return string values as is
     if isinstance(val, str):
         return val
 
-    tag, body, attr = pad_list_none(val, 3)
-    if not attr:
-        attr = {}
+    tag, *rest = val
+    body, attr = build_body_and_attr(rest)
+
     attributes = ""
+
     ## handle custom tag stuff
-    tag, *rest = tag.split(">")
-    tag_sub = tag.split(".")
-    if len(tag_sub) > 1:
-        tag = tag_sub[0]
-        if attr and "class" in attr.keys():
-            attr["class"] += " " + " ".join(tag_sub[1:])
-        else:
-            attr["class"] = " ".join(tag_sub[1:])
-    tag, id, *_ = pad_list_none(tag.split("#"), 3)
-    if id:
-        attr["id"] = id
-    body = "" if not len(val) >= 2 or not val[1] else html(val[1])
-    if rest:
-        body = html([">".join(rest), body])
+    tag, rest_tag, tag_attr = tag_handler(tag, attr)
+
+    if rest_tag:
+        logger.info(f"Rest Args{[rest_tag, body, attr]}")
+        body = html([rest_tag, body, attr])
+        attr = {}
+        logger.info(f"Rest Body{body}")
+
+    if "class" in attr and "class" in tag_attr:
+        attr["class"] += " " + tag_attr["class"]
+        del tag_attr["class"]
+    elif "class" in tag_attr:
+        attr["class"] = tag_attr["class"]
+        del tag_attr["class"]
+    attr.update(tag_attr)
     for key, val in attr.items():
         attributes += f' {key}="{val}"'
+    logger.info(f"Tag : {tag}")
+    logger.info(f"Attributes : {attributes}")
+    logger.info(f"Body : {body}")
     return f"<{tag}{attributes}>{body}</{tag}>"
+
+
+RestTag = str
+
+
+def tag_handler(tag: str, attr: Attributes) -> Tuple[Tag, RestTag, Attributes]:
+    # Get first actual tag
+    tag, *rest_tags = tag.split(">")
+    tag, id, classes = parse_tag(tag)
+    temp_attr = {}
+    if classes:
+        temp_attr["class"] = " ".join(classes)
+    if id:
+        temp_attr["id"] = id
+    rest_tags_txt = ">".join(rest_tags)
+    res = (tag, rest_tags_txt, temp_attr)
+    logger.info(f"Tag response {res}")
+    return res
+
+
+class TagParserState(Enum):
+    TAG = 1
+    CLASS = 2
+    ID = 3
+
+
+def parse_tag(tag_str: str) -> Tuple[Tag, Id, Classes]:
+    """
+    Parses an individual tag of the shorthand div.class-a.class-b#id
+    and returns
+    """
+    if ">" in tag_str:
+        raise ParseError(f"Receive nested tag {tag_str}")
+    tag: Tag = None
+    classes: Classes = []
+    id: Id = None
+
+    buffer = ""
+    current_state = TagParserState.TAG
+    for char in tag_str:
+        if char == ".":
+            if current_state == TagParserState.TAG:
+                tag = buffer
+
+            if current_state == TagParserState.CLASS:
+                classes.append(buffer)
+
+            if current_state == TagParserState.ID and not id:
+                id == buffer
+            buffer = ""
+            current_state = TagParserState.CLASS
+        elif char == "#":
+            if current_state == TagParserState.TAG:
+                tag = buffer
+
+            if current_state == TagParserState.CLASS:
+                classes.append(buffer)
+
+            if current_state == TagParserState.ID and not id:
+                id = buffer
+            buffer = ""
+            current_state = TagParserState.ID
+        else:
+            buffer += char
+
+    # empty the buffer
+    if current_state == TagParserState.TAG:
+        tag = buffer
+
+    if current_state == TagParserState.CLASS:
+        classes.append(buffer)
+
+    if current_state == TagParserState.ID and not id:
+        id = buffer
+    return (tag, id, classes)
+
+
+def build_body_and_attr(items: List[Any]) -> Tuple[str, Dict]:
+    body = ""
+    attr = {}
+    for item in items:
+        # Item is a body element
+        if isinstance(item, list):
+            body += html(item)
+        elif isinstance(item, str):
+            body += item
+        # Item is an attribute dict
+        elif isinstance(item, dict):
+            attr.update(item)
+        else:
+            raise Exception(f"Invalid form exception at: {item} Type: {type(item)}")
+    return (body, attr)
 
 
 def pad_list_none(list: List, pad_size: int):
@@ -55,4 +170,4 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())  # next section explains the use of sys.exit
+    sys.exit(main())
